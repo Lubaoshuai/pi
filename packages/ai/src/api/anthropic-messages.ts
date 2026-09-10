@@ -1436,18 +1436,15 @@ function convertTools(
 		const strict = resolveJsonSchemaStrictSampling(tool, supportsStrictTools);
 		const parameters = getJsonSchemaToolParameters(tool, strict);
 		const schema = parameters as { properties?: unknown; required?: string[] };
-		const legacyInputSchema = {
-			type: "object" as const,
+		// Preserve root-level JSON Schema keywords (anyOf, oneOf, allOf, $defs, ...)
+		// alongside the legacy object shape; dropping them silently changes the
+		// tool contract the model sees.
+		const inputSchema: Record<string, unknown> = {
+			...(parameters as Record<string, unknown>),
+			type: "object",
 			properties: schema.properties ?? {},
 			required: schema.required ?? [],
 		};
-		const inputSchema =
-			strict === true
-				? {
-						...(parameters as Record<string, unknown>),
-						...legacyInputSchema,
-					}
-				: legacyInputSchema;
 
 		return {
 			name: isOAuthToken ? toClaudeCodeName(tool.name) : tool.name,

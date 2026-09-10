@@ -142,16 +142,23 @@ describe("Anthropic eager tool input streaming compatibility", () => {
 		expect(request.headers["anthropic-beta"]).toBeUndefined();
 	});
 
-	it("only sends the full input schema for strict JSON-schema tools", async () => {
+	it("preserves root schema keywords for legacy tools and augments strict tools", async () => {
 		const legacyRequest = await captureAnthropicRequest(
 			{ supportsStrictTools: true },
 			createContext([schemaCompatibilityTool]),
 		);
-		const parameters = schemaCompatibilityTool.parameters as { properties?: unknown; required?: unknown };
+		const parameters = schemaCompatibilityTool.parameters as {
+			properties?: unknown;
+			required?: unknown;
+			additionalProperties?: unknown;
+			title?: string;
+		};
 		expect(getFirstToolInputSchema(legacyRequest.body)).toEqual({
 			type: "object",
 			properties: parameters.properties,
 			required: parameters.required,
+			additionalProperties: parameters.additionalProperties,
+			title: parameters.title,
 		});
 
 		const strictRequest = await captureAnthropicRequest({ supportsStrictTools: true }, createContext([strictTool]));
